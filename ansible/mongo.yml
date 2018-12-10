@@ -74,6 +74,9 @@
         name: mongodb-org-server
         state: present
 
+    - name: set selinux to permissive for mongod_t
+      command: semanage permissive -a mongod_t
+
     - name: create mongod systemd drop-in folder
       file:
         path: /etc/systemd/system/mongod.service.d
