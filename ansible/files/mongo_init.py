@@ -9,6 +9,7 @@ usage: mongo_init.py [-h] [--host HOST] [--port int] [--rsn [RSN]]
 
 from argparse import ArgumentParser
 from pymongo import MongoClient
+from pprint import pprint
 
 parser = ArgumentParser()
 parser.add_argument('--host', action='store',
@@ -30,4 +31,4 @@ for index, member in enumerate(args.members):
     config["members"].append({"_id": index, "host": member})
 
 c = MongoClient(args.host, args.port)
-c.admin.command("replSetInitiate", config)
+pprint(c.admin.command("replSetInitiate", config))
