@@ -36,9 +36,9 @@ resource "null_resource" "mongo_instances" {
   }
 
   # Initiate mongod cluster
-  # A helper script is used to produce the json formated query
+  # A helper script is used to generate the json formated query
   provisioner "remote-exec" {
-    inline = ["mongo --host ${aws_instance.mongo_instance.0.private_ip} --eval \"$(./mongo_init.py ${join(" ", formatlist("%s:27017", aws_instance.mongo_instance.*.private_ip))} --rsn ${var.mongo_replsetname})\""]
+    inline = ["mongo_init ${join(" ", aws_instance.mongo_instance.*.private_ip)} --rsn ${var.mongo_replsetname} --host ${aws_instance.mongo_instance.0.private_ip}"]
 
     connection {
       host = "${aws_instance.mongo_instance.0.public_ip}"

@@ -1,26 +1,32 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 Helper script to generate a mongo rs.initiate() query.
 To be used by terraform to initiate the deployed mongo cluster.
 
-Usage: ./mongo_init.py --rsn <replicaSetName> <List of host:port>
+Usage: ./mongo_init.py --rsn <replicaSetName> --host <host> <cluster members>
 '''
 
 from argparse import ArgumentParser
-import json
+from pymongo import MongoClient
 
 parser = ArgumentParser()
-parser.add_argument('--rsn', dest='rsn', nargs="?", default="rs0",
-                    help='Provide the replSetName')
-parser.add_argument("hosts", nargs="+",
-                    help="Provide the mongodb hosts")
+parser.add_argument('--host', action='store',
+                    help='Provide the target mongod host')
+parser.add_argument('--port', action='store', default='27017', metavar='int',
+                    type=int, help='Provide the target mongod port')
+parser.add_argument('--rsn', action='store', nargs="?",
+                    default="rs0", help='Provide the replica set name')
+parser.add_argument('members', nargs="+",
+                    help="Provide the list of replica set members as "
+                         "HOST:PORT")
 args = parser.parse_args()
 
-init_dict = {}
-init_dict["_id"] = args.rsn
-init_dict["members"] = []
+config = {}
+config["_id"] = args.rsn
+config["members"] = []
 
-for index, host in enumerate(args.hosts):
-    init_dict["members"].append({"_id": index, "host": host})
+for index, member in enumerate(args.members):
+    config["members"].append({"_id": index, "host": member})
 
-print("rs.initiate( " + json.dumps(init_dict, sort_keys=True) + ")")
+c = MongoClient(args.host, args.port)
+c.admin.command("replSetInitiate", config)

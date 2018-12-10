@@ -51,9 +51,11 @@
         owner: root
         group: root
         mode: 0644
+      register: override
 
     - name: systemctl daemon-reload
       command: systemctl daemon-reload
+      when: override.changed
 
     # deploy config, start and enable the service
     - name: apply redis configuration
@@ -63,6 +65,15 @@
         owner: redis
         group: root
         mode: 0640
+      register: redisconf
+
+    - name: restart redis
+      service:
+        name: redis
+        state: restarted
+        enabled: yes
+      when:
+        - redisconf.changed
 
     - name: enable and start redis service
       service:

@@ -37,7 +37,7 @@ resource "null_resource" "redis_instances" {
 
   # Initiate redis cluster
   provisioner "remote-exec" {
-    inline = ["echo yes | sudo redis-cli --cluster create ${join(" ", formatlist("%s:6379", aws_instance.redis_instance.*.private_ip))} --cluster-replicas ${var.redis_replicas}"]
+    inline = ["echo yes | redis-cli --cluster create ${join(" ", formatlist("%s:6379", aws_instance.redis_instance.*.private_ip))} --cluster-replicas ${var.redis_replicas}"]
 
     connection {
       host = "${aws_instance.redis_instance.0.public_ip}"

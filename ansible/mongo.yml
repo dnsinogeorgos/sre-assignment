@@ -4,6 +4,28 @@
   become: yes
 
   tasks:
+    # install python3 and pymongo
+    - name: install epel-release
+      package:
+        name: epel-release
+        state: present
+
+    - name: install python3 packages
+      action: >
+        {{ ansible_pkg_mgr }} name={{ item }} state=present
+      with_items:
+        - python34
+        - python34-pip
+
+    - name: get pip3 packages
+      command: pip3 freeze
+      register: freeze
+      changed_when: false
+
+    - name: pip3 install pymongo
+      command: pip3 install pymongo
+      when: "'pymongo' not in freeze.stdout"
+
     # configure tuned for necessary os tweaks
     - name: create tuned profile folder
       file:
@@ -34,9 +56,9 @@
     - name: copy mongo helper script
       copy:
         src: files/mongo_init.py
-        dest: /home/centos/mongo_init.py
-        owner: centos
-        group: centos
+        dest: /usr/local/bin/mongo_init
+        owner: root
+        group: root
         mode: 0755
 
     - name: copy mongodb-org repo
@@ -47,9 +69,9 @@
         group: root
         mode: 0644
 
-    - name: install mongodb metapackage
+    - name: install mongodb server package
       package:
-        name: mongodb-org
+        name: mongodb-org-server
         state: present
 
     - name: create mongod systemd drop-in folder
@@ -67,9 +89,11 @@
         owner: root
         group: root
         mode: 0644
+      register: override
 
     - name: systemctl daemon-reload
       command: systemctl daemon-reload
+      when: override.changed
 
     # deploy mongod config, start and enable the service
     - name: apply mongod configuration
@@ -79,6 +103,15 @@
         owner: root
         group: root
         mode: 0644
+      register: mongodconf
+
+    - name: restart mongod
+      service:
+        name: mongod
+        state: restarted
+        enabled: yes
+      when:
+        - mongodconf.changed
 
     - name: enable and start mongod service
       service:
