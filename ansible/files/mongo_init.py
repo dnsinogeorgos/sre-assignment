@@ -3,7 +3,8 @@
 Helper script to generate a mongo rs.initiate() query.
 To be used by terraform to initiate the deployed mongo cluster.
 
-Usage: ./mongo_init.py --rsn <replicaSetName> --host <host> <cluster members>
+usage: mongo_init.py [-h] [--host HOST] [--port int] [--rsn [RSN]]
+                     members [members ...]
 '''
 
 from argparse import ArgumentParser
