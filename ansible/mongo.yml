@@ -74,8 +74,25 @@
         name: mongodb-org-server
         state: present
 
-    - name: set selinux to permissive for mongod_t
-      command: semanage permissive -a mongod_t
+    # install custom selinux policy module
+    # bug is fixed for selinux-policy-3.14.1-40.fc28.noarch
+    # will probably take a while until backport
+    - name: check for mongo_custom selinux policy
+      command: semodule -l
+      register: mongo_custom
+
+    - name: copy mongo_custom selinux policy
+      copy:
+        src: files/mongo_custom.pp
+        dest: /tmp/mongo_custom.pp
+        owner: root
+        group: root
+        mode: 0644
+      when: "'mongo_custom' not in mongo_custom.stdout"
+
+    - name: install mongo_custom selinux policy
+      command: semodule -i /tmp/mongo_custom.pp
+      when: "'mongo_custom' not in mongo_custom.stdout"
 
     - name: create mongod systemd drop-in folder
       file:
