@@ -1,0 +1,87 @@
+---
+- hosts: all
+  remote_user: centos
+  become: yes
+
+  tasks:
+    # configure tuned for necessary os tweaks
+    - name: create tuned profile folder
+      file:
+        path: /etc/tuned/db-cluster
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: copy tuned profile
+      copy:
+        src: files/db-cluster_tuned.conf
+        dest: /etc/tuned/db-cluster/tuned.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: get active tuned profile
+      command: tuned-adm active
+      register: profile
+      changed_when: false
+
+    - name: switch tuned profile
+      command: tuned-adm profile db-cluster
+      when: "'db-cluster' not in profile.stdout"
+
+    # install mongo repo, package, systemd override and helper script
+    - name: copy mongo helper script
+      copy:
+        src: files/mongo_init.py
+        dest: /home/centos/mongo_init.py
+        owner: centos
+        group: centos
+        mode: 0755
+
+    - name: copy mongodb-org repo
+      copy:
+        src: files/mongodb-org-4.0.repo
+        dest: /etc/yum.repos.d/mongodb-org-4.0.repo
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: install mongodb metapackage
+      package:
+        name: mongodb-org
+        state: present
+
+    - name: create mongod systemd drop-in folder
+      file:
+        path: /etc/systemd/system/mongod.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: copy mongod systemd override
+      copy:
+        src: files/require_tuned.conf
+        dest: /etc/systemd/system/mongod.service.d/require_tuned.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: systemctl daemon-reload
+      command: systemctl daemon-reload
+
+    # deploy mongod config, start and enable the service
+    - name: apply mongod configuration
+      template:
+        src: files/mongod.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: enable and start mongod service
+      service:
+        name: mongod
+        state: started
+        enabled: yes

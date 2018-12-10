@@ -1,0 +1,71 @@
+---
+- hosts: all
+  remote_user: centos
+  become: yes
+
+  tasks:
+    # configure tuned for necessary os tweaks
+    - name: create tuned profile folder
+      file:
+        path: /etc/tuned/db-cluster
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: copy tuned profile
+      copy:
+        src: files/db-cluster_tuned.conf
+        dest: /etc/tuned/db-cluster/tuned.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: get active tuned profile
+      command: tuned-adm active
+      register: profile
+      changed_when: false
+
+    - name: switch tuned profile
+      command: tuned-adm profile db-cluster
+      when: "'db-cluster' not in profile.stdout"
+
+    # install redis repo, package and systemd override
+    - name: copy remi repo
+      copy:
+        src: files/remi.repo
+        dest: /etc/yum.repos.d/remi.repo
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: install redis package
+      package:
+        name: redis
+        state: present
+
+    - name: copy redis systemd override
+      copy:
+        src: files/require_tuned.conf
+        dest: /etc/systemd/system/redis.service.d/require_tuned.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: systemctl daemon-reload
+      command: systemctl daemon-reload
+
+    # deploy config, start and enable the service
+    - name: apply redis configuration
+      template:
+        src: files/redis.conf.j2
+        dest: /etc/redis.conf
+        owner: redis
+        group: root
+        mode: 0640
+
+    - name: enable and start redis service
+      service:
+        name: redis
+        state: started
+        enabled: yes

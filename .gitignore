@@ -1,0 +1,13 @@
+.idea
+.terraform
+.terraform.tfstate.lock.info
+ansible/mongo.retry
+ansible/redis.retry
+ansible/files/redis-test.py
+inventory
+output.json
+scripts/tf_range.py
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+venv
