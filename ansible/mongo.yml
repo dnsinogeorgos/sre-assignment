@@ -11,11 +11,11 @@
         state: present
 
     - name: install python3 packages
-      action: >
-        {{ ansible_pkg_mgr }} name={{ item }} state=present
-      with_items:
-        - python34
-        - python34-pip
+      package:
+        name:
+          - python34
+          - python34-pip
+        state: present
 
     - name: get pip3 packages
       command: pip3 freeze
